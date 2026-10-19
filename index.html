@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>بوابة سوار</title>
+<title>سوار</title>
 <meta name="theme-color" content="#FDFAF5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -73,7 +73,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
 
 <div id="prog" aria-hidden="true">
   <div class="pbar">
-    <button class="pbtn" id="back" aria-label="الرجوع إلى البوابة"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span>البوابة</span></button>
+    <button class="pbtn" id="back" aria-label="رجوع"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span>رجوع</span></button>
     <div class="ptitle" id="ptitle"></div>
     <button class="pbtn" id="ext" aria-label="فتح في المتصفح" title="فتح في المتصفح"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></button>
   </div>
@@ -83,7 +83,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
 <div id="install" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="iT">
     <img src="icons/apple-touch-icon.png" alt="">
-    <h1 id="iT">تثبيت بوابة سوار</h1>
+    <h1 id="iT">تثبيت تطبيق سوار</h1>
     <div id="iBody"></div>
     <button class="link" id="iLater">لاحقاً</button>
   </div>
@@ -106,7 +106,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
     $('splash').className = 'out';
   } else {
     var f = document.createElement('iframe');
-    f.title = 'بوابة سوار';
+    f.title = 'سوار';
     f.allow = 'clipboard-read; clipboard-write; fullscreen';
     f.src = PORTAL + '?app=1';
     f.onload = function () { setTimeout(function () { $('splash').className = 'out'; }, 250); };
@@ -157,7 +157,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
   function renderInstall() {
     var b = $('iBody');
     if (deferred) {
-      b.innerHTML = '<p>أيقونة على الشاشة الرئيسية، وتفتح البوابة وبرامجها في نافذة مستقلة.</p>';
+      b.innerHTML = '<p>أيقونة على الشاشة الرئيسية، وتفتح الأنظمة في نافذة مستقلة.</p>';
       var btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = 'تثبيت التطبيق';
       btn.onclick = function () {
         deferred.prompt();
