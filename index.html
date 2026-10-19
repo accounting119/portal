@@ -46,6 +46,13 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
 .pbody{position:relative;flex:1;min-height:0}
 .pload{position:absolute;inset:0;display:grid;place-items:center;background:var(--bg);transition:opacity .3s}
 .pload.out{opacity:0;pointer-events:none}
+.pin{display:flex;flex-direction:column;align-items:center;gap:18px}
+.picon{width:120px;height:120px;border-radius:32px;display:grid;place-items:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(214,178,112,.4),0 22px 40px -16px rgba(40,20,20,.5);animation:in .6s cubic-bezier(.2,.8,.2,1) both}
+.picon.round{border-radius:50%}
+.picon img{width:84%;height:auto}
+.picon.img{background:none;box-shadow:none;width:150px}
+.picon.img img{width:100%;height:auto}
+.pname{font-weight:700;font-size:17px}
 
 /* نافذة التثبيت */
 #install{position:fixed;inset:0;z-index:40;display:grid;align-items:end;justify-items:center;background:rgba(63,58,55,.28);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
@@ -55,7 +62,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
 .sheet img{width:84px;height:84px;border-radius:20px;box-shadow:0 8px 20px rgba(110,98,90,.18)}
 .sheet h1{margin:0;font-size:19px}
 .sheet p{margin:0;color:var(--muted);font-size:14px;line-height:1.8}
-.steps{width:100%;display:flex;flex-direction:column;gap:8px;text-align:right}
+.steps{width:100%;display:flex;flex-direction:column;gap:8px;text-align:start}
 .step{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:#FBF6EF;font-size:14px}
 .step b{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#FBF0DC;color:#8C6524;font-size:12.5px}
 .step svg{width:20px;height:20px;flex:none;stroke:var(--gold);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
@@ -73,11 +80,11 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
 
 <div id="prog" aria-hidden="true">
   <div class="pbar">
-    <button class="pbtn" id="back" aria-label="رجوع"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span>رجوع</span></button>
+    <button class="pbtn" id="back" aria-label="رجوع"><svg viewBox="0 0 24 24"><path id="backPath" d="M9 6l6 6-6 6"/></svg><span id="backTxt">رجوع</span></button>
     <div class="ptitle" id="ptitle"></div>
     <button class="pbtn" id="ext" aria-label="فتح في المتصفح" title="فتح في المتصفح"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></button>
   </div>
-  <div class="pbody" id="pbody"><div class="pload" id="pload"><div class="bar"><i></i></div></div></div>
+  <div class="pbody" id="pbody"><div class="pload" id="pload"><div class="pin"><div class="picon" id="picon" hidden></div><div class="pname" id="pname"></div><div class="bar"><i></i></div></div></div></div>
 </div>
 
 <div id="install" hidden>
@@ -97,12 +104,37 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
   var ua = navigator.userAgent || '';
   var iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var deferred = null, progUrl = '';
+  /* النصوص بلغة البوابة: تصل اللغة من البوابة وتُحفظ على الجهاز */
+  var TXT = {
+    ar: { back: 'رجوع', ext: 'فتح في المتصفح', title: 'تثبيت تطبيق سوار', later: 'لاحقاً', prog: 'برنامج', noUrl: 'لم يُضبط رابط البوابة في config.js',
+      desc: 'أيقونة على الشاشة الرئيسية، وتفتح الأنظمة في نافذة مستقلة.', install: 'تثبيت التطبيق',
+      ios1: 'افتح هذه الصفحة في متصفح Safari', ios2: 'اضغط زر المشاركة ', ios3: 'اختر «إضافة إلى الشاشة الرئيسية» ',
+      an1: 'افتح هذه الصفحة في Chrome أو Edge', an2a: 'من قائمة المتصفح ', an2b: ' اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»' },
+    en: { back: 'Back', ext: 'Open in browser', title: 'Install the SIWAR app', later: 'Later', prog: 'App', noUrl: 'The portal link is not set in config.js',
+      desc: 'An icon on your home screen; systems open in their own window.', install: 'Install app',
+      ios1: 'Open this page in Safari', ios2: 'Tap the Share button ', ios3: 'Choose “Add to Home Screen” ',
+      an1: 'Open this page in Chrome or Edge', an2a: 'From the browser menu ', an2b: ' choose “Install app” or “Add to Home screen”' }
+  };
+  var LANG = 'ar';
+  try { LANG = localStorage.getItem('siwar_lang') === 'en' ? 'en' : 'ar'; } catch (e) {}
+  function T(k) { return TXT[LANG][k]; }
+  function applyLang(l) {
+    LANG = l === 'en' ? 'en' : 'ar';
+    try { localStorage.setItem('siwar_lang', LANG); } catch (e) {}
+    document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'en' ? 'ltr' : 'rtl';
+    $('backTxt').textContent = T('back'); $('back').setAttribute('aria-label', T('back'));
+    $('backPath').setAttribute('d', LANG === 'en' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6');
+    $('ext').title = T('ext'); $('ext').setAttribute('aria-label', T('ext'));
+    $('iT').textContent = T('title'); $('iLater').textContent = T('later');
+    if (!$('install').hidden) renderInstall();
+  }
 
+  applyLang(LANG);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 
   /* ── البوابة ── */
   if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(PORTAL)) {
-    $('portal').innerHTML = '<p class="err">لم يُضبط رابط البوابة في config.js</p>';
+    $('portal').innerHTML = '<p class="err">' + T('noUrl') + '</p>';
     $('splash').className = 'out';
   } else {
     var f = document.createElement('iframe');
@@ -115,14 +147,30 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
   }
 
   /* ── فتح البرنامج داخل التطبيق ── */
-  function openProg(url, name) {
+  // أيقونة البرنامج على شاشة الفتح: لون سوار بالشعار، أو صورة البرنامج (روابط آمنة فقط)
+  function setIcon(ic) {
+    var box = $('picon'); box.innerHTML = ''; box.className = 'picon'; box.style.background = ''; box.hidden = true;
+    if (!ic) return;
+    var img = document.createElement('img'); img.alt = '';
+    if (ic.kind === 'sw' && /^#[0-9a-f]{6}$/i.test(String(ic.color || ''))) {
+      box.style.background = 'radial-gradient(120% 90% at 25% 8%,rgba(255,236,200,.14),transparent 55%),' + ic.color;
+      if (ic.round) box.className = 'picon round';
+      img.src = 'icons/logo.webp';
+    } else if (ic.kind === 'img' && /^(https:\/\/[^\s"'<>]+|data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+)$/.test(String(ic.src || ''))) {
+      box.className = 'picon img'; img.src = ic.src;
+    } else return;
+    box.appendChild(img); box.hidden = false;
+  }
+  function openProg(url, name, icon) {
     progUrl = url;
     $('ptitle').textContent = name || '';
+    $('pname').textContent = name || '';
+    setIcon(icon);
     var body = $('pbody'), old = body.querySelector('iframe');
     if (old) old.remove();
     $('pload').className = 'pload';
     var p = document.createElement('iframe');
-    p.title = name || 'برنامج';
+    p.title = name || T('prog');
     p.allow = 'clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation';
     p.onload = function () { $('pload').className = 'pload out'; };
     p.src = url;
@@ -145,7 +193,8 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
   window.addEventListener('message', function (e) {
     if (!/\.googleusercontent\.com$|^https:\/\/script\.google\.com$/.test(e.origin)) return;
     var d = e.data || {};
-    if (d.siwar === 'open' && /^https:\/\/script\.google\.com\//.test(String(d.url || ''))) openProg(String(d.url), String(d.name || ''));
+    if (d.siwar === 'open' && /^https:\/\/script\.google\.com\//.test(String(d.url || ''))) openProg(String(d.url), String(d.name || ''), d.icon && typeof d.icon === 'object' ? d.icon : null);
+    else if (d.siwar === 'lang') applyLang(String(d.lang || ''));
     else if (d.siwar === 'close' || d.siwar === 'logout') closeProg(false);
   });
 
@@ -157,8 +206,8 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
   function renderInstall() {
     var b = $('iBody');
     if (deferred) {
-      b.innerHTML = '<p>أيقونة على الشاشة الرئيسية، وتفتح الأنظمة في نافذة مستقلة.</p>';
-      var btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = 'تثبيت التطبيق';
+      b.innerHTML = '<p>' + T('desc') + '</p>';
+      var btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = T('install');
       btn.onclick = function () {
         deferred.prompt();
         deferred.userChoice.then(function () { deferred = null; $('install').hidden = true; });
@@ -166,14 +215,14 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
       b.appendChild(btn);
     } else if (iOS) {
       b.innerHTML = '<div class="steps">' +
-        step('1', 'افتح هذه الصفحة في متصفح Safari') +
-        step('2', 'اضغط زر المشاركة ' + svgShare) +
-        step('3', 'اختر «إضافة إلى الشاشة الرئيسية» ' + svgPlus) +
+        step('1', T('ios1')) +
+        step('2', T('ios2') + svgShare) +
+        step('3', T('ios3') + svgPlus) +
         '</div>';
     } else {
       b.innerHTML = '<div class="steps">' +
-        step('1', 'افتح هذه الصفحة في Chrome أو Edge') +
-        step('2', 'من قائمة المتصفح ' + svgMenu + ' اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»') +
+        step('1', T('an1')) +
+        step('2', T('an2a') + svgMenu + T('an2b')) +
         '</div>';
     }
   }
