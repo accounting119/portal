@@ -48,7 +48,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
 .pload.out{opacity:0;pointer-events:none}
 .pin{display:flex;flex-direction:column;align-items:center;gap:18px}
 .picon{width:120px;height:120px;border-radius:32px;display:grid;place-items:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(214,178,112,.4),0 22px 40px -16px rgba(40,20,20,.5);animation:in .6s cubic-bezier(.2,.8,.2,1) both}
-.picon.round{border-radius:50%}
+.picon.round{border-radius:999px}.picon.wide{width:168px;height:120px;border-radius:28px}.picon.wide.round{border-radius:999px}
 .picon img{width:84%;height:auto}
 .picon.img{background:none;box-shadow:none;width:150px}
 .picon.img img{width:100%;height:auto}
@@ -140,7 +140,17 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
     var f = document.createElement('iframe');
     f.title = 'سوار';
     f.allow = 'clipboard-read; clipboard-write; fullscreen';
-    f.src = PORTAL + '?app=1';
+    // إطار بلا حسابات جوجل: تفتح البوابة حتى لو كان في المتصفح أكثر من حساب جوجل (لا تظهر «يتعذّر فتح الملف»)
+    f.setAttribute('credentialless', '');
+    // رابط زر الإيميل (?open=…&go=…) يُمرَّر للبوابة لتفتح البرنامج مباشرة، ثم يُحذف من شريط العنوان
+    var q = new URLSearchParams(location.search), deep = '';
+    if (/^[A-Za-z0-9_-]{1,40}$/.test(q.get('open') || '')) {
+      deep = '&open=' + encodeURIComponent(q.get('open'));
+      var go = q.get('go') || '';
+      if (go && go.length <= 300 && !/[\s<>"'`\\]/.test(go)) deep += '&go=' + encodeURIComponent(go);
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    }
+    f.src = PORTAL + '?app=1' + deep;
     f.onload = function () { setTimeout(function () { $('splash').className = 'out'; }, 250); };
     $('portal').appendChild(f);
     setTimeout(function () { $('splash').className = 'out'; }, 12000);
@@ -154,7 +164,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
     var img = document.createElement('img'); img.alt = '';
     if (ic.kind === 'sw' && /^#[0-9a-f]{6}$/i.test(String(ic.color || ''))) {
       box.style.background = 'radial-gradient(120% 90% at 25% 8%,rgba(255,236,200,.14),transparent 55%),' + ic.color;
-      if (ic.round) box.className = 'picon round';
+      box.className = 'picon wide' + (ic.round ? ' round' : '');
       img.src = 'icons/logo.webp';
     } else if (ic.kind === 'img' && /^(https:\/\/[^\s"'<>]+|data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+)$/.test(String(ic.src || ''))) {
       box.className = 'picon img'; img.src = ic.src;
@@ -170,6 +180,7 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
     if (old) old.remove();
     $('pload').className = 'pload';
     var p = document.createElement('iframe');
+    p.setAttribute('credentialless', '');
     p.title = name || T('prog');
     p.allow = 'clipboard-read; clipboard-write; fullscreen; camera; microphone; geolocation';
     p.onload = function () { $('pload').className = 'pload out'; };
@@ -193,6 +204,17 @@ iframe{border:0;display:block;width:100%;height:100%;background:var(--bg)}
   window.addEventListener('message', function (e) {
     if (!/\.googleusercontent\.com$|^https:\/\/script\.google\.com$/.test(e.origin)) return;
     var d = e.data || {};
+    // حفظ دخول البوابة ولغتها في صفحة التطبيق (إطار البوابة بلا تخزين دائم)
+    if (d.siwar === 'storeGet') {
+      var data = {};
+      ['sp_token', 'sp_lang', 'sp_theme', 'sp_direct_off'].forEach(function (k) { try { var v = localStorage.getItem('pt_' + k); if (v != null) data[k] = v; } catch (x) {} });
+      try { e.source.postMessage({ siwar: 'storeData', data: data }, e.origin); } catch (x) {}
+      return;
+    }
+    if ((d.siwar === 'storeSet' || d.siwar === 'storeDel') && /^sp_(token|lang|theme|direct_off)$/.test(String(d.k || ''))) {
+      try { if (d.siwar === 'storeSet') localStorage.setItem('pt_' + d.k, String(d.v).slice(0, 500)); else localStorage.removeItem('pt_' + d.k); } catch (x) {}
+      return;
+    }
     if (d.siwar === 'open' && /^https:\/\/script\.google\.com\//.test(String(d.url || ''))) openProg(String(d.url), String(d.name || ''), d.icon && typeof d.icon === 'object' ? d.icon : null);
     else if (d.siwar === 'lang') applyLang(String(d.lang || ''));
     else if (d.siwar === 'close' || d.siwar === 'logout') closeProg(false);
